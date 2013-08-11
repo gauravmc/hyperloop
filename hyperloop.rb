@@ -1,22 +1,25 @@
 require 'socket'
 require 'http/parser'
+require 'stringio'
 
 class Hyperloop
-  def initialize port
+  def initialize port, app
     @server = TCPServer.new port
+    @app = app
   end
 
   def start
     loop do
       socket = @server.accept
-      SocketHandler.new(socket).process
+      SocketHandler.new(socket, @app).process
     end
   end
 
   class SocketHandler
-    def initialize socket
+    def initialize socket, app
       @socket = socket
       @parser = Http::Parser.new self
+      @app = app
     end
 
     def process
@@ -35,9 +38,23 @@ class Hyperloop
     end
 
     def send_response
-      @socket.write "HTTP/1.1 #{@parser.http_method} OK\r\n"
+      status, headers, body = @app.call parsed_data_to_rack_env
+      @socket.write "HTTP/1.1 #{status} OK\r\n"
+
+      headers.each_pair { |key, value| @socket.write "#{key}: #{value}\r\n" }
       @socket.write "\r\n"
-      @socket.write "w00t\n"
+      body.each { |chunk| @socket.write chunk }
+    end
+
+    def parsed_data_to_rack_env
+      Hash.new.tap do |env|
+        @parser.headers.each_pair do |key, value|
+          env["HTTP_#{key.upcase.gsub('-', '_')}"] = value
+        end
+        env['PATH_INFO'] = @parser.request_path
+        env["REQUEST_METHOD"] = @parser.http_method
+        env["rack.input"] = StringIO.new
+      end
     end
 
     def write_to_screen
@@ -52,5 +69,15 @@ class Hyperloop
   end
 end
 
-server = Hyperloop.new 3000
+class App
+  def call(env)
+    [
+      200,
+      { 'Content-Type' => 'text/html' },
+      ['Hello from the rack application.']
+    ]
+  end
+end
+
+server = Hyperloop.new 3000, App.new
 server.start
