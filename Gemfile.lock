@@ -8,9 +8,11 @@ GEM
       debugger-ruby_core_source (~> 1.2.3)
     debugger-linecache (1.2.0)
     debugger-ruby_core_source (1.2.3)
+    http_parser.rb (0.5.3)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
   debugger
+  http_parser.rb
