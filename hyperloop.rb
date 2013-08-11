@@ -29,6 +29,11 @@ end
 
 class Hyperloop
   class SocketHandler
+    HTTP_DEFINITIONS = {
+      200 => 'OK',
+      404 => 'Not Found'
+    }
+
     include Hyperloop::AppLoader
 
     def initialize socket
@@ -56,7 +61,7 @@ class Hyperloop
 
     def send_response
       status, headers, body = @app.call parsed_data_to_rack_env
-      @socket.write "HTTP/1.1 #{status} OK\r\n"
+      @socket.write "HTTP/1.1 #{status} #{HTTP_DEFINITIONS[status]}\r\n"
 
       headers.each_pair { |key, value| @socket.write "#{key}: #{value}\r\n" }
       @socket.write "\r\n"
