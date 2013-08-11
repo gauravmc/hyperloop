@@ -8,11 +8,30 @@ class Hyperloop
     @server = TCPServer.new port
   end
 
+  def prefork
+    3.times do
+      fork do
+        start
+      end
+    end
+
+    waitall
+  end
+
+  def waitall
+    Process.waitall
+
+  rescue Interrupt
+    puts "\nKilled all. No zombies."
+  end
+
   def start
     loop do
       socket = @server.accept
       Thread.new { SocketHandler.new(socket).process }
     end
+
+  rescue Interrupt
   end
 end
 
@@ -95,4 +114,4 @@ end
 
 server = Hyperloop.new 3000
 puts "Starting Hyperloop server on port 3000"
-server.start
+server.prefork
