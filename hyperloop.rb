@@ -1,6 +1,7 @@
 require 'socket'
 require 'http/parser'
 require 'stringio'
+require 'thread'
 
 class Hyperloop
   def initialize port
@@ -10,7 +11,7 @@ class Hyperloop
   def start
     loop do
       socket = @server.accept
-      SocketHandler.new(socket).process
+      Thread.new { SocketHandler.new(socket).process }
     end
   end
 end
