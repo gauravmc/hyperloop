@@ -3,23 +3,38 @@ require 'http/parser'
 require 'stringio'
 
 class Hyperloop
-  def initialize port, app
+  def initialize port
     @server = TCPServer.new port
-    @app = app
   end
 
   def start
     loop do
       socket = @server.accept
-      SocketHandler.new(socket, @app).process
+      SocketHandler.new(socket).process
     end
   end
+end
 
+class Hyperloop
+  module AppLoader
+    def run app
+      app
+    end
+
+    def load_app
+      eval File.read('config.ru')
+    end
+  end
+end
+
+class Hyperloop
   class SocketHandler
-    def initialize socket, app
+    include Hyperloop::AppLoader
+
+    def initialize socket
       @socket = socket
       @parser = Http::Parser.new self
-      @app = app
+      @app = load_app
     end
 
     def process
@@ -69,15 +84,5 @@ class Hyperloop
   end
 end
 
-class App
-  def call(env)
-    [
-      200,
-      { 'Content-Type' => 'text/html' },
-      ['Hello from the rack application.']
-    ]
-  end
-end
-
-server = Hyperloop.new 3000, App.new
+server = Hyperloop.new 3000
 server.start
