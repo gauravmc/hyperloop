@@ -42,8 +42,10 @@ class Hyperloop
     end
 
     def parse_data_from_socket
-      data = @socket.readpartial 1024
-      @parser << data
+      until @socket.closed? || @socket.eof?
+        data = @socket.readpartial 1024
+        @parser << data
+      end
     end
 
     def on_message_complete
@@ -59,6 +61,7 @@ class Hyperloop
       headers.each_pair { |key, value| @socket.write "#{key}: #{value}\r\n" }
       @socket.write "\r\n"
       body.each { |chunk| @socket.write chunk }
+      body.close if body.respond_to? :close
     end
 
     def parsed_data_to_rack_env
@@ -85,4 +88,5 @@ class Hyperloop
 end
 
 server = Hyperloop.new 3000
+puts "Starting Hyperloop server on port 3000"
 server.start
