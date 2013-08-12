@@ -1,4 +1,4 @@
 Hyperloop
 =========
 
-Hyperloop is a simple rack-based Ruby web server, which uses pre-forking and threading for concurrency.
+Hyperloop is a simple rack-based Ruby web server. Its concurrency model right now, is a mixture of pre-forking and multithreading.
